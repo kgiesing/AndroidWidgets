@@ -164,7 +164,7 @@ public class RotaryKnob extends View {
 	        }
 			break;
 		}
-		return super.onTouchEvent(event);
+		return true;
 	}
 
 	/**
