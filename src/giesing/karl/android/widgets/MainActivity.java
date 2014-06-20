@@ -7,30 +7,33 @@ import android.view.KeyEvent;
 import android.widget.SeekBar;
 
 public class MainActivity extends Activity {
-	SeekBar vertSeekBar;
+	RotaryKnob widget;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		
-		vertSeekBar = (SeekBar) findViewById(R.id.vertSeekBar);
-		vertSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+		widget = (RotaryKnob) findViewById(R.id.widget);
+		widget.setOnRotaryKnobChangeListener(new RotaryKnob.OnRotaryKnobChangeListener() {
 			
 			@Override
-			public void onStopTrackingTouch(SeekBar seekBar) {
-				Log.i("MainActivity", "onStopTrackingTouch");
+			public void onStopTrackingTouch(RotaryKnob knob) {
+				// TODO Auto-generated method stub
+				
 			}
 			
 			@Override
-			public void onStartTrackingTouch(SeekBar seekBar) {
-				Log.i("MainActivity", "onStartTrackingTouch");
+			public void onStartTrackingTouch(RotaryKnob knob) {
+				// TODO Auto-generated method stub
+				
 			}
 			
 			@Override
-			public void onProgressChanged(SeekBar seekBar, int progress,
+			public void onProgressChanged(RotaryKnob knob, int progress,
 					boolean fromUser) {
-				Log.i("MainActivity", "onProgressChanged: " + progress);
+				// TODO Auto-generated method stub
+				
 			}
 		});
 	}

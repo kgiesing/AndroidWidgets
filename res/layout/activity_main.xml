@@ -4,18 +4,12 @@
     android:layout_height="match_parent"
     tools:context="${packageName}.${activityClass}" >
 
-    <SeekBar
-        android:id="@+id/seekBar"
-        android:layout_width="match_parent"
+    <giesing.karl.android.widgets.RotaryKnob
+        android:id="@+id/widget"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
-        android:layout_alignParentTop="true" />
-
-    <giesing.karl.android.widgets.VerticalSeekBar
-        android:id="@+id/vertSeekBar"
-        android:layout_width="wrap_content"
-        android:layout_height="200dp"
-        android:layout_centerHorizontal="true"
+        android:layout_alignParentRight="true"
         android:layout_centerVertical="true" />
 
 </RelativeLayout>
