@@ -18,15 +18,14 @@ public class RotaryKnob extends View {
 	private int maxValue;
 	private int minValue;
 	private int progress;
-	private float angle;
-	private float maxAngle = 270;
-	private float minAngle = 0;
-	private float startAngle;
 	private float centerX;
 	private float centerY;
+	private float startAngle;
+	private float sweepAngle;
+	private float sweepRange;
 	private OnRotaryKnobChangeListener listener;
-	private RectF oval;
 	private Paint paint;
+	private RectF oval;
 
 	/**
 	 * A callback that notifies clients when the progress level has been
@@ -112,7 +111,7 @@ public class RotaryKnob extends View {
 		// TODO Auto-generated method stub
 		paint.setColor(Color.RED);
 		paint.setStrokeWidth(10);
-		canvas.drawArc(oval, startAngle, angle, true, paint);
+		canvas.drawArc(oval, startAngle, sweepAngle, true, paint);
 		paint.setColor(Color.DKGRAY);
 		paint.setStrokeWidth(2);
 		canvas.drawRect(0, 0, centerX * 2, centerY * 2, paint);
@@ -178,10 +177,9 @@ public class RotaryKnob extends View {
 		paint.setStrokeWidth(10);
 		maxValue = 100;
 		minValue = 0;
-		angle = 0;
-		maxAngle = 270;
-		minAngle = 0;
-		startAngle = 0;
+		startAngle = 135;
+		sweepAngle = 0;
+		sweepRange = 270;
 	}
 
 	/**
@@ -189,19 +187,25 @@ public class RotaryKnob extends View {
 	 */
 	private void trackTouchEvent(MotionEvent event) {
 		double scale;
-		// Calculate the angle
-		final float x = event.getX() - centerX;
-		final float y = event.getY() - centerY;
-		angle = (float) Math.toDegrees(Math.atan2(y, x));
-		angle = (angle < 0 ? angle + 360.0f : angle);
+		// Calculate the sweepAngle
+		final float dx = event.getX() - centerX;
+		final float dy = event.getY() - centerY;
+		float theta = (float) Math.toDegrees(Math.atan2(dy, dx));
+		// DEBUG
+		Log.i("RotaryKnob.trackTouchEvent", "theta: " + theta);
+		
+		theta -= startAngle;
+		sweepAngle = (theta < 0 ? theta + 360.0f : theta);
 
-		// Make sure angle is in bounds when calculating scale
-        if (angle < minAngle) {
+		// Make sure sweepAngle is in bounds when calculating scale
+        if (sweepAngle < 0) {
+        	sweepAngle = 0;
             scale = 0.0f;
-        } else if (angle > maxAngle) {
+        } else if (sweepAngle > sweepRange) {
+        	sweepAngle = sweepRange;
             scale = 1.0f;
         } else {
-            scale = (angle - minAngle) / (maxAngle - minAngle);
+            scale = sweepAngle / sweepRange;
         }
 		// Calculate and set progress
 		progress = (int) (minValue + scale * (maxValue - minValue));
@@ -209,13 +213,8 @@ public class RotaryKnob extends View {
 			listener.onProgressChanged(this, progress, true);
 		}
 		// DEBUG
-		Log.i("RotaryKnob.trackTouchEvent", "centerX: " + centerX);
-		Log.i("RotaryKnob.trackTouchEvent", "centerY: " + centerY);
-		Log.i("RotaryKnob.trackTouchEvent", "event.getX(): " + event.getX());
-		Log.i("RotaryKnob.trackTouchEvent", "event.getY(): " + event.getY());
-		Log.d("RotaryKnob.trackTouchEvent", "angle: " + angle);
-		Log.d("RotaryKnob.trackTouchEvent", "scale: " + scale);
-		Log.d("RotaryKnob.trackTouchEvent", "progress: " + progress);
+		Log.d("RotaryKnob.trackTouchEvent", "theta-startAngle: " + theta);
+		Log.d("RotaryKnob.trackTouchEvent", "sweepAngle: " + sweepAngle);
 		invalidate();
 	}
 
