@@ -15,6 +15,7 @@ public class MainActivity extends Activity {
 		setContentView(R.layout.activity_main);
 		
 		widget = (RotaryKnob) findViewById(R.id.widget);
+		widget.setImageResource(R.drawable.ic_launcher);
 		widget.setOnRotaryKnobChangeListener(new RotaryKnob.OnRotaryKnobChangeListener() {
 			
 			@Override

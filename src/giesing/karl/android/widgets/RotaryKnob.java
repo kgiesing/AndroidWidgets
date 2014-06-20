@@ -110,6 +110,8 @@ public class RotaryKnob extends ImageView {
 	protected synchronized void onDraw(Canvas canvas) {
 		// Draw the arc
 		canvas.drawArc(oval, startAngle, sweepAngle, true, paint);
+		// Rotate the canvas (for image rotation)
+		canvas.rotate(sweepAngle + startAngle + 90, centerX, centerY);
 		super.onDraw(canvas);
 	}
 	
