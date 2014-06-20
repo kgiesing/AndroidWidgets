@@ -6,15 +6,15 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
-import android.view.View;
+import android.widget.ImageView;
 
 /**
+ * This widget represents a rotary knob.
+ * 
  * @author Karl Giesing
- *
  */
-public class RotaryKnob extends View {
+public class RotaryKnob extends ImageView {
 	private int maxValue;
 	private int minValue;
 	private int progress;
@@ -108,15 +108,8 @@ public class RotaryKnob extends View {
 	
 	@Override
 	protected synchronized void onDraw(Canvas canvas) {
-		// TODO Auto-generated method stub
-		paint.setColor(Color.RED);
-		paint.setStrokeWidth(10);
+		// Draw the arc
 		canvas.drawArc(oval, startAngle, sweepAngle, true, paint);
-		paint.setColor(Color.DKGRAY);
-		paint.setStrokeWidth(2);
-		canvas.drawRect(0, 0, centerX * 2, centerY * 2, paint);
-		canvas.drawLine(0, 0, centerX * 2, centerY * 2, paint);
-		canvas.drawLine(0, centerY * 2, centerX * 2, 0, paint);
 		super.onDraw(canvas);
 	}
 	
@@ -129,16 +122,14 @@ public class RotaryKnob extends View {
 	
 	@Override
 	protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-		// TODO Method stub
 		super.onSizeChanged(w, h, oldw, oldh);
 		centerX = w / 2.0f;
 		centerY = h / 2.0f;
-		int left = getPaddingLeft();
-		int top = getPaddingTop();
-		int width = left + w - getPaddingRight();
-		int height = top + h - getPaddingBottom();
+		final int left = getPaddingLeft();
+		final int top = getPaddingTop();
+		final int width = left + w - getPaddingRight();
+		final int height = top + h - getPaddingBottom();
 		oval.set(left, top, width, height);
-		// oval.set(0, 0, w, h);
 	}
 	
 	@Override
@@ -191,12 +182,12 @@ public class RotaryKnob extends View {
 		final float dx = event.getX() - centerX;
 		final float dy = event.getY() - centerY;
 		float theta = (float) Math.toDegrees(Math.atan2(dy, dx));
-		// DEBUG
-		Log.i("RotaryKnob.trackTouchEvent", "theta: " + theta);
-		
 		theta -= startAngle;
+		// Ignore touch events in "dead spot" at base of knob
+		if (theta < 0 && theta > sweepRange - 360) {
+			return;
+		}
 		sweepAngle = (theta < 0 ? theta + 360.0f : theta);
-
 		// Make sure sweepAngle is in bounds when calculating scale
         if (sweepAngle < 0) {
         	sweepAngle = 0;
@@ -212,9 +203,6 @@ public class RotaryKnob extends View {
 		if (listener != null) {
 			listener.onProgressChanged(this, progress, true);
 		}
-		// DEBUG
-		Log.d("RotaryKnob.trackTouchEvent", "theta-startAngle: " + theta);
-		Log.d("RotaryKnob.trackTouchEvent", "sweepAngle: " + sweepAngle);
 		invalidate();
 	}
 
