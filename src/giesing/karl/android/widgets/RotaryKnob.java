@@ -227,8 +227,8 @@ public class RotaryKnob extends ImageView {
 		final int stroke = (int) (paint.getStrokeWidth() / 2);
 		final int left = getPaddingLeft() + stroke;
 		final int top = getPaddingTop() + stroke;
-		final int width = /*left + */w - getPaddingRight() - stroke;
-		final int height = /*top + */h - getPaddingBottom() - stroke;
+		final int width = w - getPaddingRight() - stroke;
+		final int height = h - getPaddingBottom() - stroke;
 		oval.set(left, top, width, height);
 	}
 
