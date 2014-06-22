@@ -7,31 +7,31 @@ import android.view.KeyEvent;
 import android.widget.SeekBar;
 
 public class MainActivity extends Activity {
-	RotaryKnob widget;
+	AbsKnob widget;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		
-		widget = (RotaryKnob) findViewById(R.id.widget);
+		widget = (AbsKnob) findViewById(R.id.widget);
 		widget.setImageResource(R.drawable.ic_launcher);
-		widget.setOnRotaryKnobChangeListener(new RotaryKnob.OnRotaryKnobChangeListener() {
+		widget.setOnRotaryKnobChangeListener(new AbsKnob.OnKnobChangeListener() {
 			
 			@Override
-			public void onStopTrackingTouch(RotaryKnob knob) {
+			public void onStopTrackingTouch(AbsKnob knob) {
 				// TODO Auto-generated method stub
 				
 			}
 			
 			@Override
-			public void onStartTrackingTouch(RotaryKnob knob) {
+			public void onStartTrackingTouch(AbsKnob knob) {
 				// TODO Auto-generated method stub
 				
 			}
 			
 			@Override
-			public void onProgressChanged(RotaryKnob knob, int progress,
+			public void onProgressChanged(AbsKnob knob, int progress,
 					boolean fromUser) {
 				// TODO Auto-generated method stub
 				
