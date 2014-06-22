@@ -4,7 +4,7 @@
     android:layout_height="match_parent"
     tools:context="${packageName}.${activityClass}" >
 
-    <giesing.karl.android.widgets.AbsKnob
+    <giesing.karl.android.widgets.RotaryKnob
         android:id="@+id/widget"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
