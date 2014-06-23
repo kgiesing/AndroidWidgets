@@ -7,8 +7,8 @@ import android.content.Context;
 import android.util.AttributeSet;
 
 /**
- * This class handles knobs with sweep: the total degrees of motion it has,
- * centered at 12 o'clock. (This is the equivalent of the total mechanical
+ * This class handles knobs with sweep. Sweep is the total degrees of motion it
+ * has, centered at 12 o'clock. (This is the equivalent of the total mechanical
  * travel in a potentiometer.) Both rotary knobs and center-tapped knobs are of
  * this type; continuously rotating knobs are not.
  * <p>
