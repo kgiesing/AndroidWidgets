@@ -24,8 +24,14 @@ import android.util.AttributeSet;
  */
 public abstract class AbsSweepedKnob extends AbsKnob {
 	/**
+	 * The default knob sweep range.
+	 */
+	public static float SWEEP_RANGE_DEFAULT = 240;
+	
+	/**
 	 * The start angle. Unlike other variables, this is measured clockwise from
-	 * 3 o'clock, for compatibility with the Android coordinate system.
+	 * 3 o'clock, for compatibility with the Android coordinate system. It is
+	 * automatically calculated when the sweep rate is set.
 	 */
 	protected float startAngle;
 	/**
@@ -38,7 +44,7 @@ public abstract class AbsSweepedKnob extends AbsKnob {
 	 */
 	public AbsSweepedKnob(Context context) {
 		super(context);
-		setSweepRange(270);
+		setSweepRange(SWEEP_RANGE_DEFAULT);
 	}
 
 	/**
@@ -47,7 +53,7 @@ public abstract class AbsSweepedKnob extends AbsKnob {
 	 */
 	public AbsSweepedKnob(Context context, AttributeSet attrs) {
 		super(context, attrs);
-		setSweepRange(270);
+		setSweepRange(SWEEP_RANGE_DEFAULT);
 	}
 
 	/**
@@ -57,13 +63,13 @@ public abstract class AbsSweepedKnob extends AbsKnob {
 	 */
 	public AbsSweepedKnob(Context context, AttributeSet attrs, int defStyleAttr) {
 		super(context, attrs, defStyleAttr);
-		setSweepRange(270);
+		setSweepRange(SWEEP_RANGE_DEFAULT);
 	}
 	
 	/**
 	 * Returns the knob's sweep range. The sweep range is the knob's circular
 	 * range of motion, in degrees. The range is centered around the knob's
-	 * twelve o'clock position. The default sweep range is 270 degrees.
+	 * twelve o'clock position. The default sweep range is 240 degrees.
 	 * 
 	 * @return the knob's sweep range, in degrees.
 	 */
@@ -74,10 +80,11 @@ public abstract class AbsSweepedKnob extends AbsKnob {
 	/**
 	 * Sets the knob's sweep range. The sweep range is the knob's circular range
 	 * of motion, in degrees. The range is centered around the knob's twelve
-	 * o'clock position. The default sweep range is 270 degrees.
+	 * o'clock position. The default sweep range is in SWEEP_RANGE_DEFAULT.
 	 * 
 	 * @param sweepRange
 	 *            the knob's sweep range, in degrees.
+	 * @see AbsSweepedKnob#SWEEP_RANGE_DEFAULT
 	 */
 	public synchronized void setSweepRange(float sweepRange) {
 		// Make sure it's in the range of 0 - 360
