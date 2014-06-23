@@ -51,7 +51,6 @@ public class RotaryKnob extends AbsSweepedKnob {
 	 * Initializes RotaryKnob object.
 	 */
 	private void initRotaryKnob() {
-		setSweepRange(270);
 		setProgress(0);
 	}
 	
