@@ -26,7 +26,7 @@ public class RotaryKnob extends AbsSweepedKnob {
 	protected synchronized void onDraw(Canvas canvas) {
 		// Draw the arc
 		if (arcPaint != null) {
-			canvas.drawArc(arcBounds, startAngle, sweepAngle, false, arcPaint);
+			canvas.drawArc(arcBounds, startAngle + 270, sweepAngle, false, arcPaint);
 		}
 		super.onDraw(canvas);
 	}
@@ -34,17 +34,17 @@ public class RotaryKnob extends AbsSweepedKnob {
 	@Override
 	protected void onProgressRefresh(float scale, boolean fromUser) {
 		super.onProgressRefresh(scale, fromUser);
-		sweepAngle = toAngle(scale) + startAngle;
+		sweepAngle = (360 + toAngle(scale) - startAngle) % 360;
 	}
 
 	@Override
 	protected float toProgressScale(float newAngle, float oldAngle) {
-		float angle = (startAngle + newAngle) % 360.0f;
+		float sweep = (360 + newAngle - startAngle) % 360.0f;
 		// If we're not in valid range of motion, use old value
-		if (angle > sweepRange) {
-			angle = (startAngle + oldAngle) % 360.0f;
+		if (sweep > sweepRange) {
+			sweep = (360 + oldAngle - startAngle) % 360.0f;
 		}
-		return angle / sweepRange;
+		return sweep / sweepRange;
 	}
 
 	/**

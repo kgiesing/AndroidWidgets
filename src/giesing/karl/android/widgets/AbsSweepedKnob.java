@@ -26,12 +26,11 @@ public abstract class AbsSweepedKnob extends AbsKnob {
 	/**
 	 * The default knob sweep range.
 	 */
-	public static float SWEEP_RANGE_DEFAULT = 240;
+	public static float SWEEP_RANGE_DEFAULT = 270;
 	
 	/**
-	 * The start angle. Unlike other variables, this is measured clockwise from
-	 * 3 o'clock, for compatibility with the Android coordinate system. It is
-	 * automatically calculated when the sweep rate is set.
+	 * The start angle. It is automatically calculated when the sweep range is
+	 * set.
 	 */
 	protected float startAngle;
 	/**
@@ -93,12 +92,12 @@ public abstract class AbsSweepedKnob extends AbsKnob {
 		if (sweepRange < 0)
 			sweepRange = 360 + sweepRange;
 		this.sweepRange = sweepRange;
-		startAngle = 270 - (sweepRange / 2);
+		startAngle = 360 - (sweepRange / 2);
 	}
 	
 	@Override
 	protected float toAngle(float scale) {
-		return scale * sweepRange - startAngle;
+		return (scale * sweepRange + startAngle) % 360.0f;
 	}
 
 }
