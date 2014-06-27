@@ -7,14 +7,14 @@ import android.view.KeyEvent;
 import android.widget.SeekBar;
 
 public class MainActivity extends Activity {
-	RotaryKnob widget;
+	Knob widget;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		
-		widget = (RotaryKnob) findViewById(R.id.widget);
+		widget = (Knob) findViewById(R.id.widget);
 		widget.setOnKnobChangeListener(new Knob.OnKnobChangeListener() {
 			
 			@Override
