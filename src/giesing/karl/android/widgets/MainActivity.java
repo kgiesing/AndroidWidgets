@@ -15,21 +15,21 @@ public class MainActivity extends Activity {
 		setContentView(R.layout.activity_main);
 		
 		widget = (RotaryKnob) findViewById(R.id.widget);
-		widget.setOnKnobChangeListener(new AbsKnob.OnKnobChangeListener() {
+		widget.setOnKnobChangeListener(new Knob.OnKnobChangeListener() {
 			
 			@Override
-			public void onStopTrackingTouch(AbsKnob knob) {
+			public void onStopTrackingTouch(Knob knob) {
 				// TODO Auto-generated method stub
 			}
 			
 			@Override
-			public void onStartTrackingTouch(AbsKnob knob) {
+			public void onStartTrackingTouch(Knob knob) {
 				// TODO Auto-generated method stub
 				
 			}
 			
 			@Override
-			public void onLevelChanged(AbsKnob knob, float progress,
+			public void onLevelChanged(Knob knob, float progress,
 					boolean fromUser) {
 				// TODO Auto-generated method stub
 				

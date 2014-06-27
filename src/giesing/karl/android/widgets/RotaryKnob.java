@@ -32,19 +32,9 @@ public class RotaryKnob extends AbsSweepedKnob {
 	}
 
 	@Override
-	protected void onProgressRefresh(float scale, boolean fromUser) {
-		super.onProgressRefresh(scale, fromUser);
-		sweepAngle = (360 + toAngle(scale) - startAngle) % 360;
-	}
-
-	@Override
-	protected float toProgressScale(float newAngle, float oldAngle) {
-		float sweep = (360 + newAngle - startAngle) % 360.0f;
-		// If we're not in valid range of motion, use old value
-		if (sweep > sweepRange) {
-			sweep = (360 + oldAngle - startAngle) % 360.0f;
-		}
-		return sweep / sweepRange;
+	protected void onScaleRefresh(float scale, boolean fromUser) {
+		super.onScaleRefresh(scale, fromUser);
+		sweepAngle = (360 + toRotation(scale) - startAngle) % 360;
 	}
 
 	/**

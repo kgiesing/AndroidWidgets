@@ -13,7 +13,7 @@ import android.util.AttributeSet;
  * this type; continuously rotating knobs are not.
  * <p>
  * For convenience, this class includes fields representing the sweep range and
- * the start angle.. These objects are protected (rather than private) so
+ * the start angle. These objects are protected (rather than private) so
  * subclasses can use them directly, without method call overhead. This is done
  * for performance reasons; see <a href=
  * "http://developer.android.com/training/articles/perf-tips.html#GettersSetters"
@@ -22,15 +22,15 @@ import android.util.AttributeSet;
  * @author Karl Giesing
  * 
  */
-public abstract class AbsSweepedKnob extends AbsKnob {
+public abstract class AbsSweepedKnob extends Knob {
 	/**
 	 * The default knob sweep range.
 	 */
 	public static float SWEEP_RANGE_DEFAULT = 270;
 	
 	/**
-	 * The start angle. It is automatically calculated when the sweep range is
-	 * set.
+	 * The sweep's start angle. It is automatically calculated when the sweep
+	 * range is set.
 	 */
 	protected float startAngle;
 	/**
@@ -96,8 +96,18 @@ public abstract class AbsSweepedKnob extends AbsKnob {
 	}
 	
 	@Override
-	protected float toAngle(float scale) {
+	protected float toRotation(float scale) {
 		return (scale * sweepRange + startAngle) % 360.0f;
+	}
+
+	@Override
+	protected float toScale(float newAngle, float oldAngle) {
+		float sweep = (360 + newAngle - startAngle) % 360.0f;
+		// If we're not in valid range of motion, use old value
+		if (sweep > sweepRange) {
+			sweep = (360 + oldAngle - startAngle) % 360.0f;
+		}
+		return sweep / sweepRange;
 	}
 
 }
