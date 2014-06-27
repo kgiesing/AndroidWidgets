@@ -14,20 +14,27 @@ import android.widget.ImageView;
  * This is the abstract base class for Android rotary knob widgets.
  * <p>
  * Knobs are square widgets, with an image that rotates around the center
- * depending upon the progress of the knob. They are similar in use to a SeekBar
+ * depending upon the level of the knob. They are similar in use to a SeekBar
  * (though they do not share the SeekBar's class heirarchy).
  * <p>
  * A knob's visual element will usually consist of two visual elements: an image
- * of a knob, and an arc that is drawn behind it representing the knob's
- * progress. This class handles the drawing of the image. Subclasses should
- * handle the painting of the arc onto the canvas.
+ * of a knob, and an arc that is drawn behind it representing the knob's level.
+ * This class handles the drawing of the image. Subclasses should handle the
+ * painting of the arc onto the canvas.
  * <p>
- * For convenience, this class includes a Paint object used to draw the arc, and
- * a RectF object that represents the arc's boundary box. Subclasses should
- * override onDraw, and use Canvas.drawArc to draw an arc using these objects.
- * These objects are protected (rather than private) so subclasses can use them
- * directly, without method call overhead. This is done for performance reasons;
- * see <a href=
+ * For convenience, this class includes fields representing a Paint object used
+ * to draw the arc, and a RectF object that represents the arc's boundary box.
+ * Subclasses should override onDraw, and use Canvas.drawArc to draw an arc
+ * using these objects.
+ * <p>
+ * It also includes fields representing the touch angle and rotation, set when a
+ * MotionEvent.ACTION_DOWN event occurred. These are used to control the
+ * reaction of the knob, preventing "jumps" to the current angle. Subclasses may
+ * set them in toScale() if they want to override this behavior.
+ * <p>
+ * These fields are protected (rather than private) so subclasses can use them
+ * as local variables, without method call overhead. This is done for
+ * performance reasons; see <a href=
  * "http://developer.android.com/training/articles/perf-tips.html#GettersSetters"
  * >Avoid Internal Getters/Setters</a> on the Android developer site.
  * 
@@ -35,9 +42,9 @@ import android.widget.ImageView;
  */
 public abstract class AbsKnob extends ImageView {
 	/**
-	 * A callback that notifies clients when the progress level has been
-	 * changed. This includes changes that were initiated by the user through a
-	 * touch gesture as well as changes that were initiated programmatically.
+	 * A callback that notifies clients when the level has been changed. This
+	 * includes changes that were initiated by the user through a touch gesture
+	 * as well as changes that were initiated programmatically.
 	 * <p>
 	 * It is essentially the same interface as SeekBar.OnSeekBarChangeListener,
 	 * but with AbsKnob objects.
@@ -47,20 +54,20 @@ public abstract class AbsKnob extends ImageView {
 	 */
 	public interface OnKnobChangeListener {
 		/**
-		 * Notification that the progress level has changed. Clients can use the
-		 * fromUser parameter to distinguish user-initiated changes from those
-		 * that occurred programmatically.
+		 * Notification that the level has changed. Clients can use the fromUser
+		 * parameter to distinguish user-initiated changes from those that
+		 * occurred programmatically.
 		 * 
 		 * @param seekBar
-		 *            The SeekBar whose progress has changed
-		 * @param progress
-		 *            The current progress level. This will be in the range
-		 *            0..max where max was set by {@link AbsKnob#setMax(int)}
-		 *            . (The default progress for max is 100.)
+		 *            The SeekBar whose level has changed
+		 * @param level
+		 *            The current level. This will be in the range 0..max where
+		 *            max was set by {@link AbsKnob#setMax(int)} . (The default
+		 *            level for max is 100.)
 		 * @param fromUser
-		 *            True if the progress change was initiated by the user.
+		 *            True if the level change was initiated by the user.
 		 */
-		void onProgressChanged(AbsKnob knob, int progress, boolean fromUser);
+		void onLevelChanged(AbsKnob knob, float level, boolean fromUser);
 
 		/**
 		 * Notification that the user has started a touch gesture. Clients may
@@ -80,7 +87,7 @@ public abstract class AbsKnob extends ImageView {
 		 */
 		void onStopTrackingTouch(AbsKnob knob);
 	}
-	
+
 	/**
 	 * The bounds for drawing the background arc.
 	 */
@@ -90,11 +97,20 @@ public abstract class AbsKnob extends ImageView {
 	 */
 	protected Paint arcPaint;
 	private PointF center;
-	private float clockAngle;
+	private float rotation;
 	private OnKnobChangeListener listener;
-	private int max;
-	private int min;
-	private int progress;
+	private float max;
+	private float min;
+	private float level;
+	private float range; // To avoid computations on min/max update
+	/**
+	 * Angle at which an initial touch event occurred.
+	 */
+	protected float touchStartAngle;
+	/**
+	 * Knob rotation when an initial touch event occurred.
+	 */
+	protected float touchStartRotation;
 
 	/**
 	 * @param context
@@ -165,7 +181,7 @@ public abstract class AbsKnob extends ImageView {
 	 * 
 	 * @return the upper limit of this knob's range
 	 */
-	public synchronized int getMax() {
+	public synchronized float getMax() {
 		return max;
 	}
 
@@ -174,24 +190,25 @@ public abstract class AbsKnob extends ImageView {
 	 * 
 	 * @return the lower limit of this knob's range.
 	 */
-	public synchronized int getMin() {
+	public synchronized float getMin() {
 		return min;
 	}
 
 	/**
-	 * Returns the knob's current level of progress.
+	 * Returns the knob's current level of level.
 	 * 
-	 * @return the knob's current level of progress.
+	 * @return the knob's current level of level.
 	 */
-	public synchronized int getProgress() {
-		return progress;
+	public synchronized float getLevel() {
+		return level;
 	}
 
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
 		switch (event.getAction()) {
 		case MotionEvent.ACTION_DOWN:
-			setPressed(true);
+			touchStartRotation = rotation;
+			touchStartAngle = toAngle(event);
 			if (listener != null) {
 				listener.onStartTrackingTouch(this);
 			}
@@ -203,6 +220,8 @@ public abstract class AbsKnob extends ImageView {
 			trackTouchEvent(event);
 			// fall through
 		case MotionEvent.ACTION_CANCEL:
+			touchStartRotation = rotation;
+			touchStartAngle = 0.0f;
 			setPressed(false);
 			if (listener != null) {
 				listener.onStopTrackingTouch(this);
@@ -224,28 +243,30 @@ public abstract class AbsKnob extends ImageView {
 	}
 
 	/**
-	 * Sets the upper limit of this knob's range.
+	 * Sets the upper limit of this knob's level range.
 	 * 
 	 * @param max
-	 *            the upper limit of this knob's range.
+	 *            the upper limit of this knob's level range.
 	 */
 	public synchronized void setMax(int max) {
 		this.max = max;
-		if (progress > max) {
-			onProgressRefresh(max, false);
+		range = max - min;
+		if (level > max) {
+			onScaleRefresh(max, false);
 		}
 	}
 
 	/**
-	 * Sets the lower limit of this knob's range.
+	 * Sets the lower limit of this knob's level range.
 	 * 
 	 * @param min
-	 *            the lower limit of this knob's range.
+	 *            the lower limit of this knob's level range.
 	 */
 	public synchronized void setMin(int min) {
 		this.min = min;
-		if (progress < min) {
-			onProgressRefresh(min, false);
+		range = max - min;
+		if (level < min) {
+			onScaleRefresh(min, false);
 		}
 	}
 
@@ -260,19 +281,20 @@ public abstract class AbsKnob extends ImageView {
 	}
 
 	/**
-	 * Sets the knob's current level of progress.
+	 * Sets the knob's current level of level.
 	 * 
-	 * @param progress
-	 *            the knob's current level of progress.
+	 * @param level
+	 *            the knob's current level of level.
 	 */
 	public synchronized void setProgress(int progress) {
-		onProgressRefresh(progress, false);
+		float rawScale = (progress - min) / range;
+		onScaleRefresh(rawScale, false);
 	}
-	
+
 	@Override
 	protected synchronized void onDraw(Canvas canvas) {
 		// Rotate the canvas (for image rotation)
-		canvas.rotate(clockAngle, center.x, center.y);
+		canvas.rotate(rotation, center.x, center.y);
 		super.onDraw(canvas);
 	}
 
@@ -284,20 +306,20 @@ public abstract class AbsKnob extends ImageView {
 	}
 
 	/**
-	 * This method is invoked whenever the progress is changed, either
-	 * programmatically or from a user interaction.
+	 * This method is invoked whenever the raw scale is changed, either
+	 * programmatically or from a user interaction. The scale passed to the
+	 * method will be a linear scale.
 	 * 
 	 * @param scale
-	 *            the amount to scale the progress. 0.0f = minimum progress,
-	 *            1.0f = maximum progress.
+	 *            the raw scale.
 	 * @param fromUser
 	 *            whether the change came from the user.
 	 */
-	protected void onProgressRefresh(float scale, boolean fromUser) {
-		progress = (int) (scale * (max - min)) + min;
-		clockAngle = toAngle(scale);
+	protected void onScaleRefresh(float scale, boolean fromUser) {
+		rotation = toRotation(scale);
+		level = toLevel(scale);
 		if (listener != null) {
-			listener.onProgressChanged(this, progress, fromUser);
+			listener.onLevelChanged(this, level, fromUser);
 		}
 	}
 
@@ -314,24 +336,23 @@ public abstract class AbsKnob extends ImageView {
 	}
 
 	/**
-	 * Abstract method that is invoked whenever the system changes the progress
-	 * level of the knob. Note that the parameter is a raw float representing
-	 * the scale, not the actual progress value.
+	 * Abstract method that is invoked whenever the system changes the raw scale
+	 * of the knob.
 	 * <p>
 	 * Subclasses should use this method to calculate and return the new angle
-	 * of rotation from the progress scale. The angle must be measured
-	 * clockwise, in degrees, starting at the 12 o'clock position.
+	 * of rotation. The angle must be measured clockwise, in degrees, starting
+	 * at the 12 o'clock position.
 	 * 
 	 * @param scale
-	 *            the progress scale. 0.0f = no progress, 1.0f = full progress.
-	 * @return the new clockwise angle.
+	 *            the scale. 0.0f = no level, 1.0f = full level.
+	 * @return the new angle, in degrees clockwise from 12 o'clock.
 	 */
-	protected abstract float toAngle(float scale);
+	protected abstract float toRotation(float scale);
 
 	/**
 	 * Abstract method that is invoked whenever the user changes the angle of
 	 * rotation from a touch event. Subclasses should use this method to
-	 * calculate and return the amount to scale the progress.
+	 * calculate and return the raw scale.
 	 * <p>
 	 * For knobs that rotate continuously, the old angle is provided to
 	 * determine direction. You may also use this value to determine the scale
@@ -345,17 +366,35 @@ public abstract class AbsKnob extends ImageView {
 	 *            the new angle, measured clockwise from 12 o'clock.
 	 * @param oldAngle
 	 *            the old angle, measured clockwise from 12 o'clock.
-	 * @return the amount to scale the progress. 0.0f = minimum progress, 1.0f =
-	 *         maximum progress.
+	 * @return the raw scale. 0.0f = minimum, 1.0f = maximum.
 	 */
-	protected abstract float toProgressScale(float newAngle, float oldAngle);
+	protected abstract float toScale(float newAngle, float oldAngle);
+
+	/**
+	 * Convert a raw scale to the level.
+	 * <p>
+	 * The default implementation calculates the level from the scale using a
+	 * linear relationship. Subclasses may override this method to implement
+	 * knobs with a nonlinear response curve.
+	 * 
+	 * @param scale
+	 *            the raw scale of the knob.
+	 * @return the level.
+	 */
+	protected float toLevel(float scale) {
+		return scale * range + min;
+	}
 
 	/**
 	 * Initializes the AbsKnob object.
 	 */
 	private void initAbsKnob() {
-		max = 100;
-		min = 0;
+		// Initialize max, range, level
+		max = 100.0f;
+		min = 0.0f;
+		range = 100.0f;
+		onScaleRefresh(0, false);
+		// Initialize arc variables
 		center = new PointF();
 		arcBounds = new RectF();
 		arcPaint = new Paint();
@@ -364,7 +403,20 @@ public abstract class AbsKnob extends ImageView {
 		arcPaint.setStrokeWidth(10);
 		setImageResource(android.R.drawable.ic_lock_power_off);
 		setColorFilter(Color.BLACK);
-		onProgressRefresh(0, false);
+	}
+
+	/**
+	 * Helper method to calculate an angle from a MotionEvent.
+	 * 
+	 * @param event
+	 *            MotionEvent used to calculate the angle
+	 * @return the angle, in degrees clocwise from 12 o'clock
+	 */
+	private float toAngle(MotionEvent event) {
+		final float dx = event.getX() - center.x;
+		final float dy = event.getY() - center.y;
+		final float angle = (float) Math.toDegrees(Math.atan2(dy, dx)) + 90.0f;
+		return (angle < 0 ? angle + 360.0f : angle);
 	}
 
 	/**
@@ -374,14 +426,13 @@ public abstract class AbsKnob extends ImageView {
 	 */
 	private void trackTouchEvent(MotionEvent event) {
 		// Save the old angle
-		final float oldAngle = clockAngle;
-		// Calculate the new angle
-		final float dx = event.getX() - center.x;
-		final float dy = event.getY() - center.y;
-		float newAngle = (float) Math.toDegrees(Math.atan2(dy, dx)) + 90.0f;
-		newAngle = (newAngle < 0 ? newAngle + 360.0f : newAngle);
-		// Get progress from angles, and redraw
-		onProgressRefresh(toProgressScale(newAngle, oldAngle), true);
+		final float oldAngle = rotation;
+		// Get the new angle
+		float newAngle = toAngle(event);
+		// The new angle should be offset from the angle on touch start
+		newAngle = touchStartRotation + newAngle - touchStartAngle;
+		// Get raw scale from angles, and redraw
+		onScaleRefresh(toScale(newAngle, oldAngle), true);
 		invalidate();
 	}
 

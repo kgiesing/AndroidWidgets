@@ -29,7 +29,7 @@ public class MainActivity extends Activity {
 			}
 			
 			@Override
-			public void onProgressChanged(AbsKnob knob, int progress,
+			public void onLevelChanged(AbsKnob knob, float progress,
 					boolean fromUser) {
 				// TODO Auto-generated method stub
 				
