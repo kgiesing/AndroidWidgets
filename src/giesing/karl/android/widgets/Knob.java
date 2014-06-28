@@ -454,22 +454,12 @@ public class Knob extends ImageView {
 		float angle = toAngle(event);
 		
 		// TODO Handle angles greater than 360 degrees
-		if (rotation - angle > 300) {
-			angle += 360.0f;
-		}
-		// DEBUG
-		Log.i("trackTouchEvent", "angle: " + angle);
-		Log.i("trackTouchEvent", "rotation: " + rotation);
 		
 		// Offset new angle from the angle on touch start
 		angle = touchStartRotation + angle - touchStartAngle;
 		float sweep = (360 + angle - startAngle) % 360.0f;
 		// Check range of motion
 		if (sweep > sweepRange) {
-			// DEBUG
-			Log.w("Touch start angle change", "touchStartAngle: " + touchStartAngle);
-			touchStartAngle = Math.min(touchStartAngle + sweep - sweepRange,
-					sweepRange);
 			sweep = (360 + rotation - startAngle) % 360.0f;
 		}
 		float scale = sweep / sweepRange;
