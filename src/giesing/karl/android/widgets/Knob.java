@@ -7,6 +7,7 @@ import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.RectF;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.widget.ImageView;
 
@@ -23,11 +24,6 @@ import android.widget.ImageView;
  * @author Karl Giesing
  */
 public class Knob extends ImageView {
-	/**
-	 * The default knob sweep range.
-	 */
-	public static float SWEEP_RANGE_DEFAULT = 270;
-	
 	/**
 	 * A callback that notifies clients when the level has been changed. This
 	 * includes changes that were initiated by the user through a touch gesture
@@ -74,25 +70,24 @@ public class Knob extends ImageView {
 		 */
 		void onStopTrackingTouch(Knob knob);
 	}
+	
+	/**
+	 * The default knob sweep range.
+	 */
+	public static float SWEEP_RANGE_DEFAULT = 240;
 
-	/**
-	 * The bounds for drawing the background arc.
-	 */
-	protected RectF arcBounds;
-	/**
-	 * The Paint object used for drawing the background arc.
-	 */
-	protected Paint arcPaint;
+	private RectF arcBounds;
+	private Paint arcPaint;
 	private PointF center;
-	private float rotation;
+	private float level;
 	private OnKnobChangeListener listener;
 	private float max;
 	private float min;
-	private float level;
-	private float range; // To avoid computations on min/max update
+	private float range;
+	private float rotation;
 	private float startAngle;
-	private float sweepRange;
 	private float sweepAngle;
+	private float sweepRange;
 	private float touchStartAngle;
 	private float touchStartRotation;
 
@@ -161,6 +156,15 @@ public class Knob extends ImageView {
 	}
 
 	/**
+	 * Returns the knob's current level of level.
+	 * 
+	 * @return the knob's current level of level.
+	 */
+	public synchronized float getLevel() {
+		return level;
+	}
+
+	/**
 	 * Returns the upper limit of this knob's range.
 	 * 
 	 * @return the upper limit of this knob's range
@@ -177,15 +181,6 @@ public class Knob extends ImageView {
 	public synchronized float getMin() {
 		return min;
 	}
-
-	/**
-	 * Returns the knob's current level of level.
-	 * 
-	 * @return the knob's current level of level.
-	 */
-	public synchronized float getLevel() {
-		return level;
-	}
 	
 	/**
 	 * Returns the knob's sweep range. The sweep range is the knob's circular
@@ -196,35 +191,6 @@ public class Knob extends ImageView {
 	 */
 	public synchronized float getSweepRange() {
 		return sweepRange;
-	}
-
-	/**
-	 * Sets the knob's sweep range. The sweep range is the knob's circular range
-	 * of motion, in degrees. The range is centered around the knob's twelve
-	 * o'clock position. The default sweep range is in SWEEP_RANGE_DEFAULT.
-	 * 
-	 * @param sweepRange
-	 *            the knob's sweep range, in degrees.
-	 * @see Knob#SWEEP_RANGE_DEFAULT
-	 */
-	public synchronized void setSweepRange(float sweepRange) {
-		// TODO Handle this!
-		if (sweepRange > 360)
-			sweepRange %= 360.0f;
-		if (sweepRange < 0)
-			sweepRange = 360 + sweepRange;
-		this.sweepRange = sweepRange;
-	}
-	
-	/**
-	 * Sets the start angle. The angle is measured clockwise, in degrees,
-	 * starting from the 12 o'clock position.
-	 * 
-	 * @param startAngle
-	 *            the start angle.
-	 */
-	public synchronized void setStartAngle(float startAngle) {
-		this.startAngle = startAngle;
 	}
 
 	@Override
@@ -254,7 +220,7 @@ public class Knob extends ImageView {
 		}
 		return true;
 	}
-
+	
 	/**
 	 * Sets the Paint object used to draw the background arc. If you do not want
 	 * any background arc to be drawn at all, pass null to this method.
@@ -311,12 +277,41 @@ public class Knob extends ImageView {
 	 *            the knob's current level of level.
 	 */
 	public synchronized void setProgress(int progress) {
+		// FIXME This isn't accurate for non-linear response curves!
 		float rawScale = (progress - min) / range;
 		onScaleRefresh(rawScale, false);
 	}
 
+	/**
+	 * Sets the start angle. The angle is measured clockwise, in degrees,
+	 * starting from the 12 o'clock position.
+	 * 
+	 * @param startAngle
+	 *            the start angle.
+	 */
+	public synchronized void setStartAngle(float startAngle) {
+		this.startAngle = startAngle;
+	}
+
+	/**
+	 * Sets the knob's sweep range. The sweep range is the knob's circular range
+	 * of motion, in degrees. The default sweep range is in SWEEP_RANGE_DEFAULT.
+	 * <p>
+	 * The sweep range and start angle are set separately. If you want the knob's
+	 * sweep to be centered around the 12 o'clock position, then you should also
+	 * set the start angle.
+	 * 
+	 * @param sweepRange
+	 *            the knob's sweep range, in degrees.
+	 * @see Knob#SWEEP_RANGE_DEFAULT
+	 * @see Knob#setStartAngle(float)
+	 */
+	public synchronized void setSweepRange(float sweepRange) {
+		this.sweepRange = sweepRange;
+	}
+
 	@Override
-	protected synchronized void onDraw(Canvas canvas) {
+	protected synchronized void onDraw(Canvas canvas) {		
 		// Draw the arc
 		if (arcPaint != null) {
 			canvas.drawArc(arcBounds, startAngle + 270, sweepAngle, false, arcPaint);
@@ -330,7 +325,10 @@ public class Knob extends ImageView {
 	protected synchronized void onMeasure(int widthMeasureSpec,
 			int heightMeasureSpec) {
 		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-		setMeasuredDimension(getMeasuredHeight(), getMeasuredWidth());
+		final int height = getMeasuredHeight();
+		final int width = getMeasuredWidth();
+		final int dimension = height < width ? width : height;
+		setMeasuredDimension(dimension, dimension);
 	}
 
 	/**
@@ -352,19 +350,6 @@ public class Knob extends ImageView {
 		}
 	}
 
-	/**
-	 * Calculates the sweep angle of the arc drawn behind the image.
-	 * 
-	 * @param rotation
-	 *            The angle of rotation, determined by the scale.
-	 * @param startAngle
-	 *            The start angle.
-	 * @return Sweep angle of arc.
-	 */
-	protected float toSweepAngle(float rotation, float startAngle) {
-		return (360 + rotation - startAngle) % 360;
-	}
-
 	@Override
 	protected void onSizeChanged(int w, int h, int oldw, int oldh) {
 		super.onSizeChanged(w, h, oldw, oldh);
@@ -375,50 +360,6 @@ public class Knob extends ImageView {
 		final int width = w - getPaddingRight() - stroke;
 		final int height = h - getPaddingBottom() - stroke;
 		arcBounds.set(left, top, width, height);
-	}
-
-	/**
-	 * Abstract method that is invoked whenever the system changes the raw scale
-	 * of the knob.
-	 * <p>
-	 * Subclasses should use this method to calculate and return the new angle
-	 * of rotation. The angle must be measured clockwise, in degrees, starting
-	 * at the 12 o'clock position.
-	 * 
-	 * @param scale
-	 *            the scale. 0.0f = no level, 1.0f = full level.
-	 * @return the new angle, in degrees clockwise from 12 o'clock.
-	 */
-	protected float toRotation(float scale)  {
-		return (scale * sweepRange + startAngle) % 360.0f;
-	}
-
-	/**
-	 * Abstract method that is invoked whenever the user changes the angle of
-	 * rotation from a touch event. Subclasses should use this method to
-	 * calculate and return the raw scale.
-	 * <p>
-	 * For knobs that rotate continuously, the old angle is provided to
-	 * determine direction. You may also use this value to determine the scale
-	 * if the new angle is out of the range of motion.
-	 * <p>
-	 * The angles that are passed to this method are absolute (not relative to
-	 * the start angle). They are measured clockwise starting from 12 o'clock,
-	 * in degrees.
-	 * 
-	 * @param newAngle
-	 *            the new angle, measured clockwise from 12 o'clock.
-	 * @param oldAngle
-	 *            the old angle, measured clockwise from 12 o'clock.
-	 * @return the raw scale. 0.0f = minimum, 1.0f = maximum.
-	 */
-	protected float toScale(float newAngle, float oldAngle) {
-		float sweep = (360 + newAngle - startAngle) % 360.0f;
-		// If we're not in valid range of motion, use old value
-		if (sweep > sweepRange) {
-			sweep = (360 + oldAngle - startAngle) % 360.0f;
-		}
-		return sweep / sweepRange;
 	}
 
 	/**
@@ -437,15 +378,45 @@ public class Knob extends ImageView {
 	}
 
 	/**
+	 * Calculate and return the new angle of rotation, given the raw scale. The
+	 * angle must be measured clockwise, in degrees, starting at the 12 o'clock
+	 * position.
+	 * 
+	 * @param scale
+	 *            the scale. 0.0f = no level, 1.0f = full level.
+	 * @return the new angle, in degrees clockwise from 12 o'clock.
+	 */
+	protected float toRotation(float scale)  {
+		return scale * sweepRange % 360.0f + startAngle;
+	}
+
+	/**
+	 * Calculates the sweep angle of the arc drawn behind the image.
+	 * 
+	 * @param rotation
+	 *            the angle of rotation, determined by the scale.
+	 * @param startAngle
+	 *            the start angle.
+	 * @return the sweep angle of the arc.
+	 */
+	protected float toSweepAngle(float rotation, float startAngle) {
+		return (360 + rotation - startAngle) % 360;
+	}
+
+	/**
 	 * Initializes the Knob object.
 	 */
 	private void initAbsKnob() {
-		// Initialize max, range, level
+		// Initialize data variables
 		max = 100.0f;
 		min = 0.0f;
-		range = 100.0f;
-		onScaleRefresh(0, false);
-		// Initialize arc variables
+		range = max - min;
+		
+		// Initialize angular variables
+		sweepRange = SWEEP_RANGE_DEFAULT;
+		startAngle = 360 - sweepRange / 2.0f;
+		
+		// Initialize UI
 		center = new PointF();
 		arcBounds = new RectF();
 		arcPaint = new Paint();
@@ -454,6 +425,9 @@ public class Knob extends ImageView {
 		arcPaint.setStrokeWidth(10);
 		setImageResource(android.R.drawable.ic_lock_power_off);
 		setColorFilter(Color.BLACK);
+		
+		// Initialize scale-related variables
+		onScaleRefresh(0.0f, false);
 	}
 
 	/**
@@ -476,14 +450,31 @@ public class Knob extends ImageView {
 	 * @see android.widget.AbsSeekBar#trackTouchEvent
 	 */
 	private void trackTouchEvent(MotionEvent event) {
-		// Save the old angle
-		final float oldAngle = rotation;
 		// Get the new angle
-		float newAngle = toAngle(event);
-		// The new angle should be offset from the angle on touch start
-		newAngle = touchStartRotation + newAngle - touchStartAngle;
-		// Get raw scale from angles, and redraw
-		float scale = toScale(newAngle, oldAngle);
+		float angle = toAngle(event);
+		
+		// TODO Handle angles greater than 360 degrees
+		if (rotation - angle > 300) {
+			angle += 360.0f;
+		}
+		// DEBUG
+		Log.i("trackTouchEvent", "angle: " + angle);
+		Log.i("trackTouchEvent", "rotation: " + rotation);
+		
+		// Offset new angle from the angle on touch start
+		angle = touchStartRotation + angle - touchStartAngle;
+		float sweep = (360 + angle - startAngle) % 360.0f;
+		// Check range of motion
+		if (sweep > sweepRange) {
+			// DEBUG
+			Log.w("Touch start angle change", "touchStartAngle: " + touchStartAngle);
+			touchStartAngle = Math.min(touchStartAngle + sweep - sweepRange,
+					sweepRange);
+			sweep = (360 + rotation - startAngle) % 360.0f;
+		}
+		float scale = sweep / sweepRange;
+		
+		// Refresh from raw scale and redraw
 		onScaleRefresh(scale, true);
 		invalidate();
 	}
