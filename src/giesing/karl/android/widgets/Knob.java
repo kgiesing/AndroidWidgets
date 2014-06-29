@@ -7,8 +7,8 @@ import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.RectF;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
+import android.view.View;
 import android.widget.ImageView;
 
 /**
@@ -271,15 +271,14 @@ public class Knob extends ImageView {
 	}
 
 	/**
-	 * Sets the knob's current level of level.
+	 * Sets the knob's current level.
 	 * 
 	 * @param level
-	 *            the knob's current level of level.
+	 *            the knob's current level.
 	 */
-	public synchronized void setProgress(int progress) {
-		// FIXME This isn't accurate for non-linear response curves!
-		float rawScale = (progress - min) / range;
-		onScaleRefresh(rawScale, false);
+	public synchronized void setLevel(float level) {
+		this.level = level;
+		onScaleRefresh(toScale(level), false);
 	}
 
 	/**
@@ -314,7 +313,8 @@ public class Knob extends ImageView {
 	protected synchronized void onDraw(Canvas canvas) {		
 		// Draw the arc
 		if (arcPaint != null) {
-			canvas.drawArc(arcBounds, startAngle + 270, sweepAngle, false, arcPaint);
+			canvas.drawArc(arcBounds, startAngle + 270, sweepAngle, false,
+					arcPaint);
 		}
 		// Rotate the canvas (for image rotation)
 		canvas.rotate(rotation, center.x, center.y);
@@ -325,16 +325,18 @@ public class Knob extends ImageView {
 	protected synchronized void onMeasure(int widthMeasureSpec,
 			int heightMeasureSpec) {
 		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-		final int height = getMeasuredHeight();
-		final int width = getMeasuredWidth();
-		final int dimension = height < width ? width : height;
+		// final int height = getMeasuredHeight();
+		final int height = View.MeasureSpec.getSize(heightMeasureSpec);
+		// final int width = getMeasuredWidth();
+		final int width = View.MeasureSpec.getSize(widthMeasureSpec);
+		final int dimension = height > width ? width : height;
 		setMeasuredDimension(dimension, dimension);
 	}
 
 	/**
 	 * This method is invoked whenever the raw scale is changed, either
 	 * programmatically or from a user interaction. The scale passed to the
-	 * method will be a linear scale.
+	 * method will be a linear scalar value.
 	 * 
 	 * @param scale
 	 *            the raw scale.
@@ -342,9 +344,9 @@ public class Knob extends ImageView {
 	 *            whether the change came from the user.
 	 */
 	protected void onScaleRefresh(float scale, boolean fromUser) {
-		rotation = toRotation(scale);
+		sweepAngle = scale * sweepRange;
+		rotation = (sweepAngle + startAngle) % 360.0f;
 		level = toLevel(scale);
-		sweepAngle = toSweepAngle(rotation, startAngle);
 		if (listener != null) {
 			listener.onLevelChanged(this, level, fromUser);
 		}
@@ -354,7 +356,7 @@ public class Knob extends ImageView {
 	protected void onSizeChanged(int w, int h, int oldw, int oldh) {
 		super.onSizeChanged(w, h, oldw, oldh);
 		center.set(w / 2.0f, h / 2.0f);
-		final int stroke = (int) (arcPaint.getStrokeWidth() / 2);
+		final int stroke = (int) (arcPaint.getStrokeWidth());
 		final int left = getPaddingLeft() + stroke;
 		final int top = getPaddingTop() + stroke;
 		final int width = w - getPaddingRight() - stroke;
@@ -363,7 +365,8 @@ public class Knob extends ImageView {
 	}
 
 	/**
-	 * Convert a raw scale to the level.
+	 * Convert a raw scale to the level. This should be the inverse function of
+	 * code>toScale</code>.
 	 * <p>
 	 * The default implementation calculates the level from the scale using a
 	 * linear relationship. Subclasses may override this method to implement
@@ -372,35 +375,46 @@ public class Knob extends ImageView {
 	 * @param scale
 	 *            the raw scale of the knob.
 	 * @return the level.
+	 * @see Knob#toScale(float)
 	 */
 	protected float toLevel(float scale) {
 		return scale * range + min;
 	}
-
+	
 	/**
-	 * Calculate and return the new angle of rotation, given the raw scale. The
-	 * angle must be measured clockwise, in degrees, starting at the 12 o'clock
-	 * position.
+	 * Convert a level to the raw scale. This should be the inverse function of
+	 * <code>toLevel</code>.
+	 * <p>
+	 * The default implementation calculates the scale from the level using a
+	 * linear relationship. Subclasses may override this method to implement
+	 * knobs with a nonlinear response curve.
 	 * 
 	 * @param scale
-	 *            the scale. 0.0f = no level, 1.0f = full level.
-	 * @return the new angle, in degrees clockwise from 12 o'clock.
+	 *            the raw scale of the knob.
+	 * @return the level.
+	 * @see Knob#toLevel(float)
 	 */
-	protected float toRotation(float scale)  {
-		return scale * sweepRange % 360.0f + startAngle;
+	protected float toScale(float level) {
+		return (level - min) / range;
 	}
-
+	
 	/**
-	 * Calculates the sweep angle of the arc drawn behind the image.
+	 * Helper function to calculate the clockwise difference between angles.
+	 * <p>
+	 * The angle will be measured in degrees clockwise, starting from the initial
+	 * angle and ending at the current angle. This means that this equation holds
+	 * true:
+	 * <p>
+	 * <code>delta(init, theta) == 360.0f - delta(theta, init)</code>
 	 * 
-	 * @param rotation
-	 *            the angle of rotation, determined by the scale.
-	 * @param startAngle
-	 *            the start angle.
-	 * @return the sweep angle of the arc.
+	 * @param init
+	 *            Initial (start) angle.
+	 * @param theta
+	 *            Current (end) angle.
+	 * @return Float representing delta-theta (difference of angles).
 	 */
-	protected float toSweepAngle(float rotation, float startAngle) {
-		return (360 + rotation - startAngle) % 360;
+	private static float delta(float init, float theta) {
+		return (360 + theta - init % 360.0f) % 360.0f;
 	}
 
 	/**
@@ -421,7 +435,7 @@ public class Knob extends ImageView {
 		arcBounds = new RectF();
 		arcPaint = new Paint();
 		arcPaint.setStyle(Paint.Style.STROKE);
-		arcPaint.setColor(Color.RED);
+		arcPaint.setColor(Color.BLUE);
 		arcPaint.setStrokeWidth(10);
 		setImageResource(android.R.drawable.ic_lock_power_off);
 		setColorFilter(Color.BLACK);
@@ -453,14 +467,21 @@ public class Knob extends ImageView {
 		// Get the new angle
 		float angle = toAngle(event);
 		
-		// TODO Handle angles greater than 360 degrees
-		
 		// Offset new angle from the angle on touch start
-		angle = touchStartRotation + angle - touchStartAngle;
-		float sweep = (360 + angle - startAngle) % 360.0f;
-		// Check range of motion
+		float rot = (touchStartRotation + delta(touchStartAngle, angle)) % 360.0f;
+		float sweep = delta(startAngle, rot);
+
+		// Handle out-of-range sweep values
 		if (sweep > sweepRange) {
-			sweep = (360 + rotation - startAngle) % 360.0f;
+			if (max - level < level - min) {
+				// We're entering from the top of the sweep range
+				touchStartAngle += delta(sweepRange, sweep);
+				sweep = sweepRange;
+			} else {
+				// We're entering from the bottom of the sweep range
+				touchStartAngle -= delta(rot, startAngle);
+				sweep = 0;
+			}
 		}
 		float scale = sweep / sweepRange;
 		
