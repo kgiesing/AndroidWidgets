@@ -12,7 +12,8 @@ import android.view.View;
 import android.widget.ImageView;
 
 /**
- * An ImageView that can be rotated an arbitrary number of degrees.
+ * An ImageView that can be rotated an arbitrary number of degrees by touch
+ * events. It is used as the base class of rotating widgets.
  * <p>
  * This class contains fields which are protected, rather than private, so that
  * they can be accessed without the overhead of virtual method calls. This is
@@ -94,8 +95,8 @@ public class RotatingImageView extends ImageView {
 	}
 
 	/**
-	 * Returns the center coordinates of the View that contains the knob. The
-	 * center is calculated automatically when the knob's measured size changes.
+	 * Returns the center coordinates of the widget. The center is calculated
+	 * automatically when the measured size changes.
 	 * 
 	 * @return the center coordinates of the View that contains the knob.
 	 */
@@ -130,9 +131,17 @@ public class RotatingImageView extends ImageView {
 		}
 		return true;
 	}
+	
+	/**
+	 * Resets this widget to its default state.
+	 */
+	public void reset() {
+		rotation = 0.0f;
+	}
 
 	/**
-	 * Helper method to calculate an angle from a MotionEvent.
+	 * Helper method to calculate an angle from a MotionEvent. The angle is
+	 * measured using the center of the widget as the axis of rotation.
 	 * 
 	 * @param event
 	 *            MotionEvent used to calculate the angle
@@ -167,14 +176,16 @@ public class RotatingImageView extends ImageView {
 	 * This method is invoked whenever the rotation is changed due to user
 	 * interaction.
 	 * <p>
-	 * The default implementation simply the change in rotation to the existing
-	 * rotation, making sure it does not go beyond 360 degrees.
+	 * The default implementation simply adds the change in rotation to the
+	 * existing rotation, making sure it does not go outside the range of zero
+	 * to 360 degrees. If a subclass overrides this method and does not call
+	 * super, then the rotation will not change.
 	 * 
 	 * @param delta
 	 *            The change in rotation, in degrees clockwise. May be negative.
 	 */
 	protected void onRotationChanged(float delta) {
-		rotation = (rotation + delta) % 360.0f;
+		rotation = (360.0f + rotation + delta) % 360.0f;
 	}
 
 	@Override
@@ -216,15 +227,29 @@ public class RotatingImageView extends ImageView {
 	 * This method is invoked on all touch events. If the event is the initial
 	 * touch event, it is invoked after the startTrackingTouch method; if it is
 	 * the final touch event, it is invoked before the stopTrackingTouch method.
+	 * <p>
+	 * The default implementation calculates the difference in rotation between
+	 * this touch event and the previous touch event, and invokes the
+	 * onRotationChanged method.
 	 * 
 	 * @param event
 	 *            the MotionEvent representing this touch event.
+	 * @see RotatingImageView#onRotationChanged(float)
 	 * @see RotatingImageView#startTrackingTouch(MotionEvent)
 	 * @see RotatingImageView#stopTrackingTouch(MotionEvent)
 	 */
 	protected void trackTouchEvent(MotionEvent event) {
 		theta = toAngle(event);
-		onRotationChanged(theta - init);
+		float delta = theta - init;
+		if (delta < -180.0f) {
+			// Crossed zero clockwise
+			delta += 360.0f;
+		}
+		if (delta > 180.0f) {
+			// Crossed zero counter-clockwise
+			delta -= 360.0f;
+		}
+		onRotationChanged(delta);
 		init = theta;
 	}
 
