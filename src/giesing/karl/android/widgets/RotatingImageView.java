@@ -1,6 +1,3 @@
-/**
- * 
- */
 package giesing.karl.android.widgets;
 
 import android.content.Context;

@@ -156,9 +156,9 @@ public class Knob extends ImageView {
 	}
 
 	/**
-	 * Returns the knob's current level of level.
+	 * Returns the knob's current level.
 	 * 
-	 * @return the knob's current level of level.
+	 * @return the knob's current level.
 	 */
 	public synchronized float getLevel() {
 		return level;

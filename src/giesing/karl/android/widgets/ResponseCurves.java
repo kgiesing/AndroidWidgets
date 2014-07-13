@@ -4,7 +4,7 @@ package giesing.karl.android.widgets;
  * This is a class that holds static final objects that implement various response
  * curves.
  * @author Karl Giesing
- *
+ * @see ResponseCurve
  */
 public class ResponseCurves {
 	/**
