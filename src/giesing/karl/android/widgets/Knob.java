@@ -7,9 +7,6 @@ import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.RectF;
 import android.util.AttributeSet;
-import android.view.MotionEvent;
-import android.view.View;
-import android.widget.ImageView;
 
 /**
  * This is the base class for Android rotary knob widgets.
@@ -23,7 +20,7 @@ import android.widget.ImageView;
  * 
  * @author Karl Giesing
  */
-public class Knob extends ImageView {
+public class Knob extends RotatingImageView {
 	/**
 	 * A callback that notifies clients when the level has been changed. This
 	 * includes changes that were initiated by the user through a touch gesture
@@ -71,25 +68,21 @@ public class Knob extends ImageView {
 		void onStopTrackingTouch(Knob knob);
 	}
 	
-	/**
-	 * The default knob sweep range.
-	 */
-	public static float SWEEP_RANGE_DEFAULT = 240;
-
+	/** The default knob sweep range. */
+	public static float ROTATION_RANGE_DEFAULT = 240;
 	private RectF arcBounds;
 	private Paint arcPaint;
-	private PointF center;
+	private OnKnobChangeListener knobChangeListener;
+	private ResponseCurve responseCurve;
 	private float level;
-	private OnKnobChangeListener listener;
 	private float max;
 	private float min;
 	private float range;
-	private float rotation;
+	private float rotationRange;
+	private float rotationOffset;
 	private float startAngle;
 	private float sweepAngle;
 	private float sweepRange;
-	private float touchStartAngle;
-	private float touchStartRotation;
 
 	/**
 	 * @param context
@@ -110,7 +103,7 @@ public class Knob extends ImageView {
 		super(context, attrs);
 		initAbsKnob();
 	}
-
+	
 	/**
 	 * @param context
 	 *            Android context
@@ -146,16 +139,6 @@ public class Knob extends ImageView {
 	}
 
 	/**
-	 * Returns the center coordinates of the View that contains the knob. The
-	 * center is calculated automatically when the knob's measured size changes.
-	 * 
-	 * @return the center coordinates of the View that contains the knob.
-	 */
-	public synchronized PointF getCenter() {
-		return center;
-	}
-
-	/**
 	 * Returns the knob's current level.
 	 * 
 	 * @return the knob's current level.
@@ -172,7 +155,7 @@ public class Knob extends ImageView {
 	public synchronized float getMax() {
 		return max;
 	}
-
+	
 	/**
 	 * Returns the lower limit of this knob's range.
 	 * 
@@ -183,44 +166,30 @@ public class Knob extends ImageView {
 	}
 	
 	/**
-	 * Returns the knob's sweep range. The sweep range is the knob's circular
-	 * range of motion, in degrees. The range is centered around the knob's
-	 * twelve o'clock position. The default sweep range is 240 degrees.
-	 * 
-	 * @return the knob's sweep range, in degrees.
+	 * Returns the ResponseCurve object for this Knob.
+	 * @return the ResponseCurve object for this Knob.
+	 * @see ResponseCurve
 	 */
-	public synchronized float getSweepRange() {
-		return sweepRange;
+	public ResponseCurve getResponseCurve() {
+		return responseCurve;
 	}
 
-	@Override
-	public boolean onTouchEvent(MotionEvent event) {
-		switch (event.getAction()) {
-		case MotionEvent.ACTION_DOWN:
-			touchStartRotation = rotation;
-			touchStartAngle = toAngle(event);
-			if (listener != null) {
-				listener.onStartTrackingTouch(this);
-			}
-			// fall through
-		case MotionEvent.ACTION_MOVE:
-			trackTouchEvent(event);
-			break;
-		case MotionEvent.ACTION_UP:
-			trackTouchEvent(event);
-			// fall through
-		case MotionEvent.ACTION_CANCEL:
-			touchStartRotation = rotation;
-			touchStartAngle = 0.0f;
-			setPressed(false);
-			if (listener != null) {
-				listener.onStopTrackingTouch(this);
-			}
-			break;
-		}
-		return true;
+	/**
+	 * Returns the knob's total range of rotation. This is the knob's circular
+	 * range of motion, in degrees clockwise. The default is 240 degrees.
+	 * 
+	 * @return the knob's range of rotation, in degrees clockwise.
+	 */
+	public synchronized float getRotationRange() {
+		return rotationRange;
 	}
 	
+	@Override
+	public void reset() {
+		rotation = startAngle;
+		onScaleRefresh(0.0f, false);
+	}
+
 	/**
 	 * Sets the Paint object used to draw the background arc. If you do not want
 	 * any background arc to be drawn at all, pass null to this method.
@@ -230,44 +199,6 @@ public class Knob extends ImageView {
 	 */
 	public void setArcPaint(Paint arcPaint) {
 		this.arcPaint = arcPaint;
-	}
-
-	/**
-	 * Sets the upper limit of this knob's level range.
-	 * 
-	 * @param max
-	 *            the upper limit of this knob's level range.
-	 */
-	public synchronized void setMax(int max) {
-		this.max = max;
-		range = max - min;
-		if (level > max) {
-			onScaleRefresh(max, false);
-		}
-	}
-
-	/**
-	 * Sets the lower limit of this knob's level range.
-	 * 
-	 * @param min
-	 *            the lower limit of this knob's level range.
-	 */
-	public synchronized void setMin(int min) {
-		this.min = min;
-		range = max - min;
-		if (level < min) {
-			onScaleRefresh(min, false);
-		}
-	}
-
-	/**
-	 * Sets the OnKnobChangeListener for this knob.
-	 * 
-	 * @param the
-	 *            OnKnobChangeListener for this knob.
-	 */
-	public void setOnKnobChangeListener(OnKnobChangeListener listener) {
-		this.listener = listener;
 	}
 
 	/**
@@ -282,6 +213,81 @@ public class Knob extends ImageView {
 	}
 
 	/**
+	 * Sets the upper limit of this knob's level range.
+	 * 
+	 * @param max
+	 *            the upper limit of this knob's level range.
+	 */
+	public synchronized void setMax(int max) {
+		this.max = max;
+		range = max - min;
+		if (level > max) {
+			onScaleRefresh(1.0f, false);
+		}
+	}
+
+	/**
+	 * Sets the lower limit of this knob's level range.
+	 * 
+	 * @param min
+	 *            the lower limit of this knob's level range.
+	 */
+	public synchronized void setMin(int min) {
+		this.min = min;
+		range = max - min;
+		if (level < min) {
+			onScaleRefresh(0.0f, false);
+		}
+	}
+
+	/**
+	 * Sets the OnKnobChangeListener for this knob.
+	 * 
+	 * @param the
+	 *            OnKnobChangeListener for this knob.
+	 */
+	public void setOnKnobChangeListener(OnKnobChangeListener listener) {
+		knobChangeListener = listener;
+	}
+
+	/**
+	 * Sets the ResponseCurve interface for this Knob. This allows the widget to
+	 * mimic the behavior if different types of knob tapers (e.g. linear or
+	 * audio).
+	 * <p>
+	 * If set to null, the level will be set directly by the angle of rotation
+	 * (the equivalent of ResponseCurve.LINEAR).
+	 * 
+	 * @param responseCurve
+	 *            the ResponseCurve object for this Knob.
+	 * @see ResponseCurves#LINEAR
+	 */
+	public void setResponseCurve(ResponseCurve responseCurve) {
+		this.responseCurve = responseCurve;
+	}
+
+	/**
+	 * Sets the knob's total range of rotation. This is the knob's circular
+	 * range of motion, in degrees clockwise. The default is 240 degrees.
+	 * <p>
+	 * The range of rotation and start angle are set separately. If you want the
+	 * knob's range of rotation to be centered around the 12 o'clock position,
+	 * then you should also set the start angle.
+	 * <p>
+	 * Setting the range of rotation to a value greater than 360.0f will result
+	 * in more than one turn of the knob to reach its max value.
+	 * 
+	 * @param rotationRange
+	 *            the knob's range of rotation, in degrees clockwise.
+	 * @see Knob#ROTATION_RANGE_DEFAULT
+	 * @see Knob#setStartAngle(float)
+	 */
+	public synchronized void setRotationRange(float rotationRange) {
+		this.rotationRange = rotationRange;
+		sweepRange = (rotationRange > 360.0f ? 360.0f : rotationRange);
+	}
+
+	/**
 	 * Sets the start angle. The angle is measured clockwise, in degrees,
 	 * starting from the 12 o'clock position.
 	 * 
@@ -292,23 +298,6 @@ public class Knob extends ImageView {
 		this.startAngle = startAngle;
 	}
 
-	/**
-	 * Sets the knob's sweep range. The sweep range is the knob's circular range
-	 * of motion, in degrees. The default sweep range is in SWEEP_RANGE_DEFAULT.
-	 * <p>
-	 * The sweep range and start angle are set separately. If you want the knob's
-	 * sweep to be centered around the 12 o'clock position, then you should also
-	 * set the start angle.
-	 * 
-	 * @param sweepRange
-	 *            the knob's sweep range, in degrees.
-	 * @see Knob#SWEEP_RANGE_DEFAULT
-	 * @see Knob#setStartAngle(float)
-	 */
-	public synchronized void setSweepRange(float sweepRange) {
-		this.sweepRange = sweepRange;
-	}
-
 	@Override
 	protected synchronized void onDraw(Canvas canvas) {		
 		// Draw the arc
@@ -316,107 +305,37 @@ public class Knob extends ImageView {
 			canvas.drawArc(arcBounds, startAngle + 270, sweepAngle, false,
 					arcPaint);
 		}
-		// Rotate the canvas (for image rotation)
-		canvas.rotate(rotation, center.x, center.y);
 		super.onDraw(canvas);
 	}
-
+	
 	@Override
-	protected synchronized void onMeasure(int widthMeasureSpec,
-			int heightMeasureSpec) {
-		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-		// final int height = getMeasuredHeight();
-		final int height = View.MeasureSpec.getSize(heightMeasureSpec);
-		// final int width = getMeasuredWidth();
-		final int width = View.MeasureSpec.getSize(widthMeasureSpec);
-		final int dimension = height > width ? width : height;
-		setMeasuredDimension(dimension, dimension);
-	}
-
-	/**
-	 * This method is invoked whenever the raw scale is changed, either
-	 * programmatically or from a user interaction. The scale passed to the
-	 * method will be a linear scalar value.
-	 * 
-	 * @param scale
-	 *            the raw scale.
-	 * @param fromUser
-	 *            whether the change came from the user.
-	 */
-	protected void onScaleRefresh(float scale, boolean fromUser) {
-		sweepAngle = scale * sweepRange;
-		rotation = (sweepAngle + startAngle) % 360.0f;
-		level = toLevel(scale);
-		if (listener != null) {
-			listener.onLevelChanged(this, level, fromUser);
+	protected void onRotationChanged(float delta) {
+		if (rotationOffset + delta > rotationRange) {
+			delta = rotationRange - rotationOffset;
 		}
+		if (rotationOffset + delta < 0.0f) {
+			delta = -rotationOffset;
+		}
+		super.onRotationChanged(delta);
+		rotationOffset += delta;
+		onScaleRefresh(rotationOffset / rotationRange, true);
 	}
-
+	
 	@Override
 	protected void onSizeChanged(int w, int h, int oldw, int oldh) {
 		super.onSizeChanged(w, h, oldw, oldh);
-		center.set(w / 2.0f, h / 2.0f);
-		final int stroke = (int) (arcPaint.getStrokeWidth());
+		// Calculate the arc bounds
+		int stroke = 0;
+		if (arcPaint != null) {
+			stroke = (int) (arcPaint.getStrokeWidth());
+		}
 		final int left = getPaddingLeft() + stroke;
 		final int top = getPaddingTop() + stroke;
 		final int width = w - getPaddingRight() - stroke;
 		final int height = h - getPaddingBottom() - stroke;
 		arcBounds.set(left, top, width, height);
 	}
-
-	/**
-	 * Convert a raw scale to the level. This should be the inverse function of
-	 * code>toScale</code>.
-	 * <p>
-	 * The default implementation calculates the level from the scale using a
-	 * linear relationship. Subclasses may override this method to implement
-	 * knobs with a nonlinear response curve.
-	 * 
-	 * @param scale
-	 *            the raw scale of the knob.
-	 * @return the level.
-	 * @see Knob#toScale(float)
-	 */
-	protected float toLevel(float scale) {
-		return scale * range + min;
-	}
 	
-	/**
-	 * Convert a level to the raw scale. This should be the inverse function of
-	 * <code>toLevel</code>.
-	 * <p>
-	 * The default implementation calculates the scale from the level using a
-	 * linear relationship. Subclasses may override this method to implement
-	 * knobs with a nonlinear response curve.
-	 * 
-	 * @param scale
-	 *            the raw scale of the knob.
-	 * @return the level.
-	 * @see Knob#toLevel(float)
-	 */
-	protected float toScale(float level) {
-		return (level - min) / range;
-	}
-	
-	/**
-	 * Helper function to calculate the clockwise difference between angles.
-	 * <p>
-	 * The angle will be measured in degrees clockwise, starting from the initial
-	 * angle and ending at the current angle. This means that this equation holds
-	 * true:
-	 * <p>
-	 * <code>delta(init, theta) == 360.0f - delta(theta, init)</code>
-	 * 
-	 * @param init
-	 *            Initial (start) angle.
-	 * @param theta
-	 *            Current (end) angle.
-	 * @return Float representing delta-theta (difference of angles).
-	 */
-	private static float delta(float init, float theta) {
-		return (360 + theta - init % 360.0f) % 360.0f;
-	}
-
 	/**
 	 * Initializes the Knob object.
 	 */
@@ -427,17 +346,21 @@ public class Knob extends ImageView {
 		range = max - min;
 		
 		// Initialize angular variables
-		sweepRange = SWEEP_RANGE_DEFAULT;
+		setRotationRange(ROTATION_RANGE_DEFAULT);
 		startAngle = 360 - sweepRange / 2.0f;
+		rotation = startAngle;
+		rotationOffset = 0.0f;
 		
 		// Initialize UI
 		center = new PointF();
 		arcBounds = new RectF();
 		arcPaint = new Paint();
 		arcPaint.setStyle(Paint.Style.STROKE);
+		// TODO Get color from theme
 		arcPaint.setColor(Color.BLUE);
 		arcPaint.setStrokeWidth(10);
 		setImageResource(android.R.drawable.ic_lock_power_off);
+		// TODO Get color from theme
 		setColorFilter(Color.BLACK);
 		
 		// Initialize scale-related variables
@@ -445,49 +368,55 @@ public class Knob extends ImageView {
 	}
 
 	/**
-	 * Helper method to calculate an angle from a MotionEvent.
+	 * This method is invoked whenever the raw scale is changed, either
+	 * programmatically or from a user interaction.
+	 * <p>
+	 * The scale passed to the method will be a linear scalar value.
 	 * 
-	 * @param event
-	 *            MotionEvent used to calculate the angle
-	 * @return the angle, in degrees clocwise from 12 o'clock
+	 * @param scale
+	 *            the raw scale.
+	 * @param fromUser
+	 *            whether the change came from the user.
 	 */
-	private float toAngle(MotionEvent event) {
-		final float dx = event.getX() - center.x;
-		final float dy = event.getY() - center.y;
-		final float angle = (float) Math.toDegrees(Math.atan2(dy, dx)) + 90.0f;
-		return (angle < 0 ? angle + 360.0f : angle);
+	private void onScaleRefresh(float scale, boolean fromUser) {
+		sweepAngle = scale * sweepRange;
+		level = toLevel(scale);
+		if (knobChangeListener != null) {
+			knobChangeListener.onLevelChanged(this, level, fromUser);
+		}
 	}
 
 	/**
-	 * Helper method that is invoked when tracking touch events.
+	 * Convert a raw scale to the level. This should be the inverse function of
+	 * code>toScale</code>.
 	 * 
-	 * @see android.widget.AbsSeekBar#trackTouchEvent
+	 * @param scale
+	 *            the raw scale of the knob.
+	 * @return the level.
+	 * @see Knob#toScale(float)
 	 */
-	private void trackTouchEvent(MotionEvent event) {
-		// Get the new angle
-		float angle = toAngle(event);
-		
-		// Offset new angle from the angle on touch start
-		float rot = (touchStartRotation + delta(touchStartAngle, angle)) % 360.0f;
-		float sweep = delta(startAngle, rot);
-
-		// Handle out-of-range sweep values
-		if (sweep > sweepRange) {
-			if (max - level < level - min) {
-				// We're entering from the top of the sweep range
-				touchStartAngle += delta(sweepRange, sweep);
-				sweep = sweepRange;
-			} else {
-				// We're entering from the bottom of the sweep range
-				touchStartAngle -= delta(rot, startAngle);
-				sweep = 0;
-			}
+	private float toLevel(float scale) {
+		if (responseCurve != null) {
+			scale = responseCurve.toCurve(scale);
 		}
-		float scale = sweep / sweepRange;
-		
-		// Refresh from raw scale and redraw
-		onScaleRefresh(scale, true);
-		invalidate();
+		return scale * range + min;
+	}
+
+	/**
+	 * Convert a level to the raw scale. This should be the inverse function of
+	 * <code>toLevel</code>.
+	 * 
+	 * @param scale
+	 *            the raw scale of the knob.
+	 * @return the level.
+	 * @see Knob#toLevel(float)
+	 */
+	private float toScale(float level) {
+		float curve = (level - min) / range;
+		if (responseCurve != null) {
+			return responseCurve.toScale(curve);
+		}
+		return curve;
 	}
 
 }
