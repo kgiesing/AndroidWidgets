@@ -183,6 +183,7 @@ public class RotatingImageView extends ImageView {
 	 */
 	protected void onRotationChanged(float delta) {
 		rotation = (360.0f + rotation + delta) % 360.0f;
+		this.invalidate();
 	}
 
 	@Override
