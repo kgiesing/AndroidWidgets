@@ -35,8 +35,10 @@ public class MainActivity extends Activity {
 			public void onProgressChanged(SeekBar seekBar, int progress,
 					boolean fromUser) {
 				// Set progress in knob
-				widget.setLevel(progress);
-				tvProgress.setText("progress: " + progress);
+				if (fromUser) {
+					widget.setLevel(progress);
+					tvProgress.setText("progress: " + progress);
+				}
 			}
 		});
 		widget = (Knob) findViewById(R.id.widget);
@@ -53,10 +55,11 @@ public class MainActivity extends Activity {
 			}
 			
 			@Override
-			public void onLevelChanged(Knob knob, float level,
-					boolean fromUser) {
-				seekBar.setProgress((int) level);
-				tvProgress.setText("level: " + level);
+			public void onLevelChanged(Knob knob, float level, boolean fromUser) {
+				if (fromUser) {
+					seekBar.setProgress((int) level);
+					tvProgress.setText("level: " + level);
+				}
 			}
 		});
 	}
