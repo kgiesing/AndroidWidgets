@@ -209,6 +209,7 @@ public class Knob extends RotatingImageView {
 	 *            the knob's current level.
 	 */
 	public synchronized void setLevel(float level) {
+		level = level > max ? max : (level < min ? min : level);
 		this.level = level;
 		onScaleRefresh(toScale(level), false);
 	}
@@ -286,6 +287,8 @@ public class Knob extends RotatingImageView {
 	public synchronized void setRotationRange(float rotationRange) {
 		this.rotationRange = rotationRange;
 		arcRange = (rotationRange > 360.0f ? 360.0f : rotationRange);
+		// Move the knob to the correct position
+		onScaleRefresh(toScale(level), false);
 	}
 
 	/**
@@ -296,6 +299,8 @@ public class Knob extends RotatingImageView {
 	 *            the start angle.
 	 */
 	public synchronized void setStartAngle(float startAngle) {
+		// Change rotation to match start angle
+		super.onRotationChanged(startAngle - this.startAngle);
 		this.startAngle = startAngle;
 	}
 
