@@ -28,7 +28,7 @@ public class RotatingImageView extends ImageView {
 	 */
 	protected PointF center;
 	/**
-	 * The current rotation.
+	 * The current image rotation.
 	 */
 	protected float rotation;
 	private float init;
@@ -102,9 +102,9 @@ public class RotatingImageView extends ImageView {
 	}
 
 	/**
-	 * Returns the current rotation, in degrees, clockwise from 12 o'clock.
+	 * Returns the current image rotation, in degrees, clockwise from 12 o'clock.
 	 * 
-	 * @return the current rotation.
+	 * @return the current image rotation.
 	 */
 	public float getRotation() {
 		return rotation;
