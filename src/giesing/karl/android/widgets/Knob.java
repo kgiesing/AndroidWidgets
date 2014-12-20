@@ -7,6 +7,7 @@ import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.RectF;
 import android.util.AttributeSet;
+import android.util.Log;
 
 /**
  * This is the base class for Android rotary knob widgets.
@@ -79,10 +80,10 @@ public class Knob extends RotatingImageView {
 	private float min;
 	private float range;
 	private float rotationRange;
-	private float rotationOffset;
+	private float theta; // Angle used to calculate level (not View rotation)
 	private float startAngle;
-	private float sweepAngle;
-	private float sweepRange;
+	private float arcAngle;
+	private float arcRange;
 
 	/**
 	 * @param context
@@ -284,7 +285,7 @@ public class Knob extends RotatingImageView {
 	 */
 	public synchronized void setRotationRange(float rotationRange) {
 		this.rotationRange = rotationRange;
-		sweepRange = (rotationRange > 360.0f ? 360.0f : rotationRange);
+		arcRange = (rotationRange > 360.0f ? 360.0f : rotationRange);
 	}
 
 	/**
@@ -302,7 +303,7 @@ public class Knob extends RotatingImageView {
 	protected synchronized void onDraw(Canvas canvas) {		
 		// Draw the arc
 		if (arcPaint != null) {
-			canvas.drawArc(arcBounds, startAngle + 270, sweepAngle, false,
+			canvas.drawArc(arcBounds, startAngle + 270, arcAngle, false,
 					arcPaint);
 		}
 		super.onDraw(canvas);
@@ -310,15 +311,15 @@ public class Knob extends RotatingImageView {
 	
 	@Override
 	protected void onRotationChanged(float delta) {
-		if (rotationOffset + delta > rotationRange) {
-			delta = rotationRange - rotationOffset;
+		if (theta + delta > rotationRange) {
+			delta = rotationRange - theta;
 		}
-		if (rotationOffset + delta < 0.0f) {
-			delta = -rotationOffset;
+		if (theta + delta < 0.0f) {
+			delta = -theta;
 		}
 		super.onRotationChanged(delta);
-		rotationOffset += delta;
-		onScaleRefresh(rotationOffset / rotationRange, true);
+		theta += delta;
+		onScaleRefresh(theta / rotationRange, true);
 	}
 	
 	@Override
@@ -363,9 +364,9 @@ public class Knob extends RotatingImageView {
 		
 		// Initialize angular variables
 		setRotationRange(ROTATION_RANGE_DEFAULT);
-		startAngle = 360 - sweepRange / 2.0f;
+		startAngle = 360 - arcRange / 2.0f;
 		rotation = startAngle;
-		rotationOffset = 0.0f;
+		theta = 0.0f;
 		
 		// Initialize UI
 		center = new PointF();
@@ -395,12 +396,12 @@ public class Knob extends RotatingImageView {
 	 *            whether the change came from the user.
 	 */
 	private void onScaleRefresh(float scale, boolean fromUser) {
-		sweepAngle = scale * sweepRange;
+		arcAngle = scale * arcRange;
 		level = toLevel(scale);
 		if (!fromUser) {
-			// The scale was changed programmatically; update the view
-			super.onRotationChanged((startAngle + sweepAngle) % 360.0f
-					- rotation);
+			// The scale was changed programmatically; update view and theta
+			super.onRotationChanged(scale * rotationRange - theta);
+			theta = scale * rotationRange;
 		}
 		if (knobChangeListener != null) {
 			knobChangeListener.onLevelChanged(this, level, fromUser);
