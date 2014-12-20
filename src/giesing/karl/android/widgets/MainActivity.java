@@ -36,14 +36,12 @@ public class MainActivity extends Activity {
 					boolean fromUser) {
 				// Set progress in knob
 				if (fromUser) {
-					widget.setLevel(progress);
-					tvProgress.setText("progress: " + progress);
+					widget.setRotationRange(progress * 5.40f + 180.0f);
 				}
 			}
 		});
 		widget = (Knob) findViewById(R.id.widget);
 		widget.setStartAngle(0.0f);
-		widget.setRotationRange(720.0f);
 		widget.setOnKnobChangeListener(new Knob.OnKnobChangeListener() {
 			
 			@Override
@@ -59,7 +57,6 @@ public class MainActivity extends Activity {
 			@Override
 			public void onLevelChanged(Knob knob, float level, boolean fromUser) {
 				if (fromUser) {
-					seekBar.setProgress((int) level);
 					tvProgress.setText("level: " + level);
 				}
 			}
