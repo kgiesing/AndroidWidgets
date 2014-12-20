@@ -43,7 +43,7 @@ public class Knob extends RotatingImageView {
 		 * @param level
 		 *            The current level. This will be in the range 0..max where
 		 *            max was set by {@link Knob#setMax(int)} . (The default
-		 *            level for max is 100.)
+		 *            value for max is 100.)
 		 * @param fromUser
 		 *            True if the level change was initiated by the user.
 		 */
@@ -336,6 +336,22 @@ public class Knob extends RotatingImageView {
 		arcBounds.set(left, top, width, height);
 	}
 	
+	@Override
+	protected void startTrackingTouch(android.view.MotionEvent event) {
+		super.startTrackingTouch(event);
+		if (knobChangeListener != null) {
+			knobChangeListener.onStartTrackingTouch(this);
+		}
+	}
+	
+	@Override
+	protected void stopTrackingTouch(android.view.MotionEvent event) {
+		super.stopTrackingTouch(event);
+		if (knobChangeListener != null) {
+			knobChangeListener.onStopTrackingTouch(this);
+		}
+	}
+	
 	/**
 	 * Initializes the Knob object.
 	 */
@@ -381,6 +397,11 @@ public class Knob extends RotatingImageView {
 	private void onScaleRefresh(float scale, boolean fromUser) {
 		sweepAngle = scale * sweepRange;
 		level = toLevel(scale);
+		if (!fromUser) {
+			// The scale was changed programmatically; update the view
+			super.onRotationChanged((startAngle + sweepAngle) % 360.0f
+					- rotation);
+		}
 		if (knobChangeListener != null) {
 			knobChangeListener.onLevelChanged(this, level, fromUser);
 		}
