@@ -42,6 +42,8 @@ public class MainActivity extends Activity {
 			}
 		});
 		widget = (Knob) findViewById(R.id.widget);
+		widget.setStartAngle(0.0f);
+		widget.setRotationRange(720.0f);
 		widget.setOnKnobChangeListener(new Knob.OnKnobChangeListener() {
 			
 			@Override
