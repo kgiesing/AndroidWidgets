@@ -1,6 +1,7 @@
 package giesing.karl.android.widgets;
 
 import android.app.Activity;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -11,12 +12,14 @@ public class MainActivity extends Activity {
 	Knob widget;
 	SeekBar seekBar;
 	TextView tvProgress;
+	Drawable knobUI;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
+		knobUI = getResources().getDrawable(R.drawable.knob_ui);
 		tvProgress = (TextView) findViewById(R.id.tvProgress);
 		seekBar = (SeekBar) findViewById(R.id.seekBar1);
 		seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -42,6 +45,7 @@ public class MainActivity extends Activity {
 		});
 		widget = (Knob) findViewById(R.id.widget);
 		widget.setStartAngle(0.0f);
+		widget.setImageDrawable(knobUI);
 		widget.setOnKnobChangeListener(new Knob.OnKnobChangeListener() {
 			
 			@Override

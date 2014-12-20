@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <!-- The knob surface -->
+    <item>
+        <shape android:shape="oval" >
+            <gradient
+                android:endColor="@android:color/background_dark"
+                android:startColor="@android:color/background_dark"
+                android:type="radial" />
+        </shape>
+    </item>
+    <!-- The knob pointer ->
+    <item>
+        <shape android:shape="rectangle" >
+            <corners
+                android:topLeftRadius="2dp"
+                android:topRightRadius="2dp" />
+
+            <size
+                android:height="30dp"
+                android:width="10dp" />
+
+            <solid android:color="@android:color/primary_text_dark" />
+        </shape>
+    </item>
+    <!-  -->
+
+</layer-list>
