@@ -126,6 +126,7 @@ public class RotatingImageView extends ImageView {
 			stopTrackingTouch(event);
 			break;
 		}
+		this.invalidate();
 		return true;
 	}
 	
