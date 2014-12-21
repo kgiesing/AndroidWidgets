@@ -1,29 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android" >
 
-    <!-- The knob surface -->
-    <item>
+    <item
+        android:bottom="6dp"
+        android:left="6dp"
+        android:right="6dp"
+        android:top="6dp">
         <shape android:shape="oval" >
             <gradient
-                android:endColor="@android:color/background_dark"
-                android:startColor="@android:color/background_dark"
-                android:type="radial" />
-        </shape>
-    </item>
-    <!-- The knob pointer ->
-    <item>
-        <shape android:shape="rectangle" >
-            <corners
-                android:topLeftRadius="2dp"
-                android:topRightRadius="2dp" />
+                android:angle="270"
+                android:centerColor="#44000000"
+                android:endColor="#33C0C0C0"
+                android:startColor="#33C0C0C0"
+                android:type="sweep" />
 
             <size
-                android:height="30dp"
-                android:width="10dp" />
-
-            <solid android:color="@android:color/primary_text_dark" />
+                android:height="72dp"
+                android:width="72dp" />
         </shape>
     </item>
-    <!-  -->
+    <item
+        android:bottom="9dp"
+        android:left="9dp"
+        android:right="9dp"
+        android:top="9dp">
+        <shape android:shape="oval" >
+            <gradient
+                android:centerColor="#33C0C0C0"
+                android:endColor="#00ffffff"
+                android:gradientRadius="72"
+                android:startColor="#33ffffff"
+                android:type="radial" />
+
+            <size
+                android:height="72dp"
+                android:width="72dp" />
+        </shape>
+    </item>
+    <item
+        android:bottom="3dp"
+        android:drawable="@android:drawable/ic_lock_power_off"
+        android:left="3dp"
+        android:right="3dp"
+        android:top="0dp">
+    </item>
 
 </layer-list>
