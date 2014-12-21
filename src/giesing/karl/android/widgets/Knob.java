@@ -378,11 +378,10 @@ public class Knob extends RotatingImageView {
 		arcBounds = new RectF();
 		arcPaint = new Paint();
 		arcPaint.setStyle(Paint.Style.STROKE);
-		// TODO Get color from theme
+		// TODO Get info from AttributeSet
 		arcPaint.setColor(Color.BLUE);
 		arcPaint.setStrokeWidth(10);
-		setImageResource(android.R.drawable.ic_lock_power_off);
-		// TODO Get color from theme
+		setImageResource(R.drawable.knob_ui);
 		setColorFilter(Color.BLACK);
 		
 		// Initialize scale-related variables
